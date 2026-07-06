@@ -2,6 +2,8 @@
 
 Static HTML/JavaScript utility for decoding and encoding ESign encrypted app source share strings.
 
+Deployed at: https://devnoname120.github.io/esign-source-decoder/
+
 ESign source shares use this format:
 
 ```text
