@@ -1,0 +1,8 @@
+{
+  "name": "esign-source-decoder",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test esign-source-decoder.test.js"
+  }
+}

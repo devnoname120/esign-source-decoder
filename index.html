@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ESign Source Decoder</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --text: #1b1f24;
+      --muted: #626b76;
+      --line: #cfd5dd;
+      --accent: #0b6e69;
+      --accent-strong: #064d49;
+      --danger: #b42318;
+      --shadow: 0 14px 35px rgba(27, 31, 36, 0.08);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111418;
+        --surface: #1a1f25;
+        --text: #eef2f6;
+        --muted: #9aa4af;
+        --line: #333b45;
+        --accent: #31b8ad;
+        --accent-strong: #8be3dc;
+        --danger: #ff8a80;
+        --shadow: 0 16px 38px rgba(0, 0, 0, 0.28);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    main {
+      width: calc(100vw - 80px);
+      margin: 0 auto;
+      padding: 32px 0;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .status {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .panel {
+      display: flex;
+      min-height: max(560px, calc(100vh - 170px));
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 58px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    label,
+    .panel-title {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .key-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 min(440px, 45%);
+      min-width: 280px;
+    }
+
+    .key-row label {
+      white-space: nowrap;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+    }
+
+    input {
+      height: 36px;
+      padding: 7px 9px;
+    }
+
+    textarea {
+      flex: 1;
+      min-height: 0;
+      resize: none;
+      border: 0;
+      border-radius: 0;
+      padding: 14px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 13px;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: white;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+    }
+
+    button.primary:hover {
+      color: white;
+      filter: brightness(0.96);
+    }
+
+    @media (max-width: 820px) {
+      main {
+        width: calc(100vw - 20px);
+        padding: 18px 0;
+      }
+
+      header,
+      .workspace {
+        display: block;
+      }
+
+      h1 {
+        margin-bottom: 8px;
+        font-size: 24px;
+      }
+
+      .status {
+        margin-bottom: 12px;
+        text-align: left;
+      }
+
+      .panel {
+        min-height: 360px;
+        margin-bottom: 12px;
+      }
+
+      .panel-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .key-row {
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>ESign Source Decoder</h1>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </header>
+
+    <section class="workspace" aria-label="Decoder">
+      <div class="panel">
+        <div class="panel-head">
+          <label for="source-input">Encrypted source</label>
+          <div class="key-row">
+            <label for="key-input">Enc key</label>
+            <input id="key-input" value="source_share" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <textarea id="source-input" autofocus spellcheck="false" placeholder="source[...]"></textarea>
+        <div class="actions">
+          <button id="decode-button" class="primary" type="button">Decode</button>
+          <button id="clear-button" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Decrypted URLs</div>
+          <button id="copy-button" type="button">Copy</button>
+        </div>
+        <textarea id="output" spellcheck="false"></textarea>
+      </div>
+    </section>
+  </main>
+
+  <script src="esign-source-decoder.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var decoder = window.ESignSourceDecoder;
+      var sourceInput = document.getElementById("source-input");
+      var keyInput = document.getElementById("key-input");
+      var output = document.getElementById("output");
+      var status = document.getElementById("status");
+      var decodeButton = document.getElementById("decode-button");
+      var copyButton = document.getElementById("copy-button");
+      var clearButton = document.getElementById("clear-button");
+
+      function setStatus(message, isError) {
+        status.textContent = message || "";
+        status.classList.toggle("error", Boolean(isError));
+      }
+
+      function decodeCurrentInput() {
+        try {
+          var plaintext = decoder.decodeSource(sourceInput.value, keyInput.value);
+          var urls = decoder.extractUrls(plaintext);
+          output.value = urls.length ? urls.join("\n") : plaintext;
+          setStatus(urls.length ? urls.length + " URL" + (urls.length === 1 ? "" : "s") : "No URLs found", false);
+        } catch (error) {
+          output.value = "";
+          setStatus(error.message || String(error), true);
+        }
+      }
+
+      function encodeCurrentOutput() {
+        try {
+          sourceInput.value = decoder.encodeSource(output.value, keyInput.value);
+          setStatus("Encoded source", false);
+        } catch (error) {
+          sourceInput.value = "";
+          setStatus(error.message || String(error), true);
+        }
+      }
+
+      function pastedText(event) {
+        var clipboard = event.clipboardData || window.clipboardData;
+        return clipboard ? clipboard.getData("text") : null;
+      }
+
+      decodeButton.addEventListener("click", decodeCurrentInput);
+
+      sourceInput.addEventListener("paste", function (event) {
+        var text = pastedText(event);
+        if (text === null) {
+          return;
+        }
+        event.preventDefault();
+        sourceInput.value = text;
+        decodeCurrentInput();
+      });
+
+      output.addEventListener("paste", function (event) {
+        var text = pastedText(event);
+        if (text === null) {
+          return;
+        }
+        event.preventDefault();
+        output.value = text;
+        encodeCurrentOutput();
+      });
+
+      clearButton.addEventListener("click", function () {
+        sourceInput.value = "";
+        output.value = "";
+        setStatus("", false);
+        sourceInput.focus();
+      });
+
+      copyButton.addEventListener("click", function () {
+        if (!output.value) {
+          return;
+        }
+
+        function fallbackCopy() {
+          output.select();
+          document.execCommand("copy");
+          setStatus("Copied", false);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(output.value).then(function () {
+            setStatus("Copied", false);
+          }, fallbackCopy);
+        } else {
+          fallbackCopy();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
